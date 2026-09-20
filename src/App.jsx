@@ -1,24 +1,30 @@
 import { useState, useEffect } from "react";
 
-// 백엔드 API 주소. 지금은 백엔드가 없으니 환경변수로만 준비해 둔다.
-// VITE_ 로 시작하는 변수만 브라우저 코드에 노출된다(보안상 중요).
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 export default function App() {
-  const [memos, setMemos] = useState([]);   // 메모 목록 상태
-  const [text, setText] = useState("");      // 입력창 상태
+  const [memos, setMemos] = useState([]);
+  const [text, setText] = useState("");
 
-  // 1장에서는 백엔드가 없으므로 임시 데이터로 화면만 확인한다.
-  useEffect(() => {
-    setMemos([{ id: 1, content: "첫 번째 메모(임시 데이터)" }]);
-  }, []);
+  useEffect(() => { loadMemos(); }, []);   // 처음 뜰 때 서버에서 목록을 불러온다
 
-  const addMemo = () => {
-    if (!text.trim()) return;
-    setMemos([...memos, { id: Date.now(), content: text }]);
-    setText("");
+  const loadMemos = async () => {
+    const res = await fetch(`${API_URL}/memos`);   // 목록 조회 GET
+    setMemos(await res.json());
   };
-  const deleteMemo = (id) => setMemos(memos.filter((m) => m.id !== id));
+  const addMemo = async () => {
+    if (!text.trim()) return;
+    await fetch(`${API_URL}/memos`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: text }),   // JS 객체 → JSON 문자열
+    });
+    setText(""); loadMemos();
+  };
+  const deleteMemo = async (id) => {
+    await fetch(`${API_URL}/memos/${id}`, { method: "DELETE" });
+    loadMemos();
+  };
 
   return (
     <div style={{ maxWidth: 480, margin: "40px auto", fontFamily: "sans-serif" }}>
